@@ -29,6 +29,14 @@ const User = mongoose.model('User', UserSchema);
 app.use(express.json());
 app.use(cors());
 
+app.get('/', async (req, res) => {
+    try {
+        res.status(201).send({ message: 'User registered successfully' });
+    } catch (error) {
+        console.error(error); // Log the error for debugging
+        res.status(500).send({ error: 'Server error' });
+    }
+});
 app.post('/register', async (req, res) => {
     try {
         const { username, password } = req.body;
