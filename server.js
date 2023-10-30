@@ -1,62 +1,113 @@
 const express = require('express');
-const mongoose = require('mongoose'); // Import mongoose
-const cors = require('cors');  // Import the cors package
+const http = require('http');
+const socketIo = require('socket.io');
+const mqtt = require('mqtt');
 
 const app = express();
-const PORT = 3000;
+const server = http.createServer(app);
+require('dotenv').config();
 
-const uri = "mongodb+srv://bplforum:Computer12.@cluster0.zqmka8n.mongodb.net/?retryWrites=true&w=majority";
+const THINGNAME = 'Yug'; // Your thing name
+const AWS_IOT_ENDPOINT =
+    'a1lt7b88vgfoh5-ats.iot.ap-southeast-2.amazonaws.com'; // Your AWS IoT endpoint
+const topic = 'esp32/pub';
 
-// Connect using mongoose
-mongoose.connect(uri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    // useCreateIndex: true
-}).then(() => {
-    console.log('Mongoose connected successfully');
-}).catch(err => {
-    console.error('Mongoose connection error:', err);
+// Amazon Root CA 1
+const rootCA = process.env.rootCA;
+
+// Device Certificate
+const cert = process.env.cert;
+
+// Device Private Key
+const privateKey = process.env.privateKey;
+
+// Socket.io Configuration
+// Socket.io Configuration
+const io = socketIo(server, {
+  cors: {
+      origin: "*",  // Allow all origins; in production, you should be more restrictive
+      methods: ["GET", "POST"]
+  }
 });
 
-const UserSchema = new mongoose.Schema({
-    username: { type: String, unique: true }, // Ensure usernames are unique
-    password: String
+// MQTT Configuration
+
+
+const mqttOptions = {
+  key: Buffer.from(privateKey, 'utf8'), // Replace with your private key
+  cert: Buffer.from(cert, 'utf8'), // Replace with your certificate
+  ca: Buffer.from(rootCA, 'utf8'), // Replace with your root CA
+  clientId: 'myClientId',
+  protocol: 'mqtts', // Use 'mqtts' for secure MQTT
+  host: AWS_IOT_ENDPOINT,
+  port: 8883, // Default port for MQTT over TLS
+};
+
+console.log('Connecting to MQTT broker...');
+
+const client = mqtt.connect(mqttOptions);
+
+let messages = [];
+
+client.on('connect', () => {
+  console.log('Connected to MQTT broker');
+  client.subscribe(topic);
 });
 
-const User = mongoose.model('User', UserSchema);
+client.on('message', (receivedTopic, payload) => {
+  const receivedMessage = payload.toString();
+  console.log(receivedMessage);
+  messages.push(receivedMessage);
+  io.emit('newMessage', receivedMessage);
+});
 
-app.use(express.json());
-app.use(cors());
+io.on('connection', (socket) => {
+  console.log('Client connected');
 
-app.get('/', async (req, res) => {
-    try {
-        res.status(201).send({ message: 'User registered successfully' });
-    } catch (error) {
-        console.error(error); // Log the error for debugging
-        res.status(500).send({ error: 'Server error' });
+  socket.on('subscribeData', ({ topic }) => {
+    if (topic) {
+      // Unsubscribe from the previous topic, if any
+      client.unsubscribe(topic);
     }
-});
-app.post('/register', async (req, res) => {
-    try {
-        const { username, password } = req.body;
 
-        // Hash the password before saving
-        // const hashedPassword = await bcrypt.hash(password, 10);
+    client.subscribe(topic, (error) => {
+      if (error) {
+        console.error('Error subscribing to topic:', error);
+      } else {
+        console.log(`Subscribed to topic: ${topic}`);
+      }
+    });
+  });
 
-        const user = new User({
-            username: username,
-            password: password
-        });
+  socket.on('sendToBackend', ({ topic, message }) => {
+    // Handle messages sent to the backend (e.g., process them or perform actions)
+    console.log('Received message on the backend:', message);
+  });
 
-        await user.save();
-
-        res.status(201).send({ message: 'User registered successfully' });
-    } catch (error) {
-        console.error(error); // Log the error for debugging
-        res.status(500).send({ error: 'Server error' });
+  socket.on('sendToMQTT', ({ topic, message }) => {
+    if (!topic || !message) {
+      console.error('Both topic and message are required');
+      return;
     }
+
+    client.publish(topic, message, (error) => {
+      if (error) {
+        console.error('Error publishing message to MQTT:', error);
+      } else {
+        console.log('Message published to MQTT successfully');
+      }
+    });
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected');
+  });
 });
 
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+// ... Other API routes ...
+
+// Start the server
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
