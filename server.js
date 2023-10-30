@@ -50,8 +50,13 @@ const client = mqtt.connect(mqttOptions);
 let messages = [];
 
 client.on('connect', () => {
-  console.log('Connected to MQTT broker');
-  client.subscribe(topic);
+  try {
+    console.log('Connected to MQTT broker');
+    client.subscribe(topic);
+  } catch (error) {
+    console.error('Error during MQTT connection:', error);
+    // Handle the error here, such as retrying the connection or taking other appropriate actions.
+  }
 });
 
 client.on('message', (receivedTopic, payload) => {
