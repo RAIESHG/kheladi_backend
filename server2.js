@@ -1,27 +1,27 @@
 const express = require('express');
-const http = require('http');
+// const http = require('http');
 const socketIo = require('socket.io');
 const mqtt = require('mqtt');
 require('dotenv').config();
 const fs = require('fs');
-// const https = require('https');
+const https = require('https');
 const bodyParser = require('body-parser');
 
 const app = express();
 app.use(bodyParser.json());
 
 
-// const pKey = fs.readFileSync('/etc/letsencrypt/live/yugiot.tech/privkey.pem', 'utf8');
-// const certificate = fs.readFileSync('/etc/letsencrypt/live/yugiot.tech/fullchain.pem', 'utf8');
+const pKey = fs.readFileSync('/etc/letsencrypt/live/yugiot.tech/privkey.pem', 'utf8');
+const certificate = fs.readFileSync('/etc/letsencrypt/live/yugiot.tech/fullchain.pem', 'utf8');
 
 const credentials = {
-//   key: pKey,
-//   cert: certificate,
+  key: pKey,
+  cert: certificate,
 };
 
-const server = http.createServer(credentials, app);
+// const server = http.createServer(credentials, app);
 
-// const server = https.createServer(credentials, app);
+const server = https.createServer(credentials, app);
 // Validations for required environment variables
 
 const THINGNAME = 'Yug'; // Your thing name
