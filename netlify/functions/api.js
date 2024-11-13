@@ -8,27 +8,9 @@ const qs = require('qs');
 const api = express();
 const router = express.Router();
 
+// Middleware
 api.use(bodyParser.json());
 api.use(bodyParser.urlencoded({ extended: true }));
-
-// Error handling middleware
-api.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({
-    success: false,
-    message: 'Internal Server Error',
-    error: err.message
-  });
-});
-
-// 404 handler
-api.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Not Found',
-    path: req.path
-  });
-});
 
 // FonePay API configuration
 const fonepayConfig = {
@@ -110,9 +92,10 @@ function generateVerificationDV(params) {
 }
 
 // Routes
+// Note: Remove the /api prefix as it's handled by Netlify redirects
 router.post("/request-payment", async (req, res) => {
+  console.log('Received request:', req.body);
   try {
-    console.log('Received payment request:', req.body);
     const { amount, r1, r2 } = req.body;
 
     if (!amount || isNaN(amount) || amount <= 0) {
@@ -136,11 +119,11 @@ router.post("/request-payment", async (req, res) => {
     const paymentUrl = `${fonepayConfig.fonepayUrl}?${qs.stringify(params)}`;
     
     console.log('Redirecting to:', paymentUrl);
-    res.redirect(paymentUrl);
+    return res.redirect(paymentUrl);
 
   } catch (error) {
     console.error('Error:', error);
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 });
 
@@ -193,17 +176,28 @@ router.get("/verify-payment", (req, res) => {
   }
 });
 
-// Error route
-router.get("/error", (req, res) => {
-  res.status(500).json({
+// Mount routes BEFORE error handlers
+api.use('/', router);  // Changed from '/.netlify/functions/api' to '/'
+
+// Error handlers
+api.use((req, res, next) => {
+  console.log('404 Not Found:', req.method, req.path);
+  res.status(404).json({
     success: false,
-    message: 'An error occurred',
-    details: req.query
+    message: 'Not Found',
+    path: req.path,
+    method: req.method
   });
 });
 
-// Mount router
-api.use('/.netlify/functions/api', router);
+api.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Internal Server Error',
+    error: err.message
+  });
+});
 
-// Export handler
+// Export the handler
 module.exports.handler = serverless(api);

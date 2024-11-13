@@ -8,14 +8,14 @@
 
 [[redirects]]
   force = true
-  from = "/api/*"
+  from = "/.netlify/functions/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200
 
 [[redirects]]
   from = "/*"
-  to = "/error.html"
-  status = 404
+  to = "/index.html"
+  status = 200
 
 [build.environment]
   NODE_VERSION = "18.14.0"
