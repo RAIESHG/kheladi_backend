@@ -1,22 +1,22 @@
 const express = require('express');
-const serverless = require('serverless-http');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
+const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
 const qs = require('qs');
 
-const api = express();
-const router = express.Router();
+const app = express();
+const port = 3000;
 
-api.use(bodyParser.json());
-api.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // FonePay API configuration
 const fonepayConfig = {
-  pid: process.env.FONEPAY_PID || 'NBQM',
-  secretKey: process.env.FONEPAY_SECRET_KEY || 'a7e3512f5032480a83137793cb2021dc',
-  fonepayUrl: process.env.FONEPAY_URL || 'https://dev-clientapi.fonepay.com/api/merchantRequest',
-  returnUrl: process.env.RETURN_URL || '/.netlify/functions/api/verify-payment',
+  pid: 'NBQM',
+  secretKey: 'a7e3512f5032480a83137793cb2021dc',
+  fonepayUrl: 'https://dev-clientapi.fonepay.com/api/merchantRequest',
+  returnUrl: 'http://localhost:3000/api/verify-payment',
 };
 
 // Helper function to generate PRN
@@ -91,7 +91,7 @@ function generateVerificationDV(params) {
 }
 
 // Request Payment
-router.post('/request-payment', async (req, res) => {
+app.post('/api/request-payment', async (req, res) => {
   try {
     const { amount, r1, r2 } = req.body;
 
@@ -130,7 +130,7 @@ router.post('/request-payment', async (req, res) => {
 });
 
 // Verify Payment with debug logs
-router.get('/verify-payment', (req, res) => {
+app.get('/api/verify-payment', (req, res) => {
   console.log('1. Received verification request with query params:', req.query);
   
   try {
@@ -181,14 +181,8 @@ router.get('/verify-payment', (req, res) => {
 });
 
 // Serve static files
-api.use(express.static('public'));
+app.use(express.static('public'));
 
-api.listen(3000, () => {
-  console.log(`Server running at http://localhost:3000`);
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
 });
-
-// Use the router
-api.use('/.netlify/functions/api', router);
-
-// Export the handler
-module.exports.handler = serverless(api);
