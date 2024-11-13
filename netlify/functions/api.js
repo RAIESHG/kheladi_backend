@@ -6,7 +6,6 @@ const { v4: uuidv4 } = require('uuid');
 const qs = require('qs');
 
 const api = express();
-const router = express.Router();
 
 // Middleware
 api.use(bodyParser.json());
@@ -91,10 +90,9 @@ function generateVerificationDV(params) {
   return dv;
 }
 
-// Routes
-// Note: Remove the /api prefix as it's handled by Netlify redirects
-router.post("/request-payment", async (req, res) => {
-  console.log('Received request:', req.body);
+// Direct routes without router
+api.post("/request-payment", async (req, res) => {
+  console.log('Received request at /request-payment:', req.body);
   try {
     const { amount, r1, r2 } = req.body;
 
@@ -127,7 +125,8 @@ router.post("/request-payment", async (req, res) => {
   }
 });
 
-router.get("/verify-payment", (req, res) => {
+api.get("/verify-payment", (req, res) => {
+  console.log('Received verification request:', req.query);
   try {
     console.log('Verification request:', req.query);
     const params = { ...req.query };
@@ -176,8 +175,16 @@ router.get("/verify-payment", (req, res) => {
   }
 });
 
-// Mount routes BEFORE error handlers
-api.use('/', router);  // Changed from '/.netlify/functions/api' to '/'
+// Log all requests
+api.use((req, res, next) => {
+  console.log('Request received:', {
+    method: req.method,
+    path: req.path,
+    body: req.body,
+    query: req.query
+  });
+  next();
+});
 
 // Error handlers
 api.use((req, res, next) => {
@@ -186,7 +193,8 @@ api.use((req, res, next) => {
     success: false,
     message: 'Not Found',
     path: req.path,
-    method: req.method
+    method: req.method,
+    body: req.body
   });
 });
 
@@ -200,4 +208,4 @@ api.use((err, req, res, next) => {
 });
 
 // Export the handler
-module.exports.handler = serverless(api);
+exports.handler = serverless(api);
