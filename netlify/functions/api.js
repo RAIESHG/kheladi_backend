@@ -1,22 +1,22 @@
 const express = require('express');
+const serverless = require('serverless-http');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
-const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
 const qs = require('qs');
 
-const app = express();
-const port = 3000;
+const api = express();
+const router = express.Router();
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+api.use(bodyParser.json());
+api.use(bodyParser.urlencoded({ extended: true }));
 
 // FonePay API configuration
 const fonepayConfig = {
-  pid: 'NBQM',
-  secretKey: 'a7e3512f5032480a83137793cb2021dc',
-  fonepayUrl: 'https://dev-clientapi.fonepay.com/api/merchantRequest',
-  returnUrl: 'http://localhost:3000/api/verify-payment',
+  pid: process.env.FONEPAY_PID || 'NBQM',
+  secretKey: process.env.FONEPAY_SECRET_KEY || 'a7e3512f5032480a83137793cb2021dc',
+  fonepayUrl: process.env.FONEPAY_URL || 'https://dev-clientapi.fonepay.com/api/merchantRequest',
+  returnUrl: process.env.RETURN_URL || '/.netlify/functions/api/verify-payment',
 };
 
 // Helper function to generate PRN
@@ -90,8 +90,8 @@ function generateVerificationDV(params) {
   return dv;
 }
 
-// Request Payment
-app.post('/api/request-payment', async (req, res) => {
+// Routes
+router.post('/request-payment', async (req, res) => {
   try {
     const { amount, r1, r2 } = req.body;
 
@@ -113,24 +113,16 @@ app.post('/api/request-payment', async (req, res) => {
     };
 
     params.DV = generateDV(params);
-
     const paymentUrl = `${fonepayConfig.fonepayUrl}?${qs.stringify(params)}`;
     
-    // Direct browser redirect
     res.redirect(paymentUrl);
-
   } catch (error) {
-    console.error('Error in payment request:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to process payment request',
-      error: error.message
-    });
+    console.error('Error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Verify Payment with debug logs
-app.get('/api/verify-payment', (req, res) => {
+router.get('/verify-payment', (req, res) => {
   console.log('1. Received verification request with query params:', req.query);
   
   try {
@@ -180,9 +172,8 @@ app.get('/api/verify-payment', (req, res) => {
   }
 });
 
-// Serve static files
-app.use(express.static('public'));
+// Use the router
+api.use('/.netlify/functions/api', router);
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
+// Export the handler
+module.exports.handler = serverless(api);
