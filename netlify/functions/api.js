@@ -91,9 +91,8 @@ function generateVerificationDV(params) {
 }
 
 // Routes
-router.post("/request-payment", async (req, res) => {
+router.post('/request-payment', async (req, res) => {
   try {
-    console.log('Received payment request:', req.body);
     const { amount, r1, r2 } = req.body;
 
     if (!amount || isNaN(amount) || amount <= 0) {
@@ -116,9 +115,7 @@ router.post("/request-payment", async (req, res) => {
     params.DV = generateDV(params);
     const paymentUrl = `${fonepayConfig.fonepayUrl}?${qs.stringify(params)}`;
     
-    console.log('Redirecting to:', paymentUrl);
     res.redirect(paymentUrl);
-
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ success: false, message: error.message });
@@ -130,6 +127,13 @@ router.get('/verify-payment', (req, res) => {
   
   try {
     const params = { ...req.query };
+    
+    // Check if required parameters exist
+    if (!params.PRN || !params.DV) {
+      console.error('Missing required parameters');
+      return res.redirect('/payment-error.html?error=missing_parameters');
+    }
+
     const { DV, PS, RC, PRN, P_AMT } = params;
     delete params.DV;
     delete params.RU;
@@ -156,23 +160,34 @@ router.get('/verify-payment', (req, res) => {
 
       if (PS === 'true' && RC === 'successful') {
         console.log('5. Payment successful');
-        res.redirect('/payment-success.html');
+        return res.redirect('/payment-success.html');
       } else {
         console.log('5. Payment failed', {
           PaymentStatus: PS,
           ResponseCode: RC,
-          Reason: params.RC === 'failed' ? 'Transaction declined' : 'Unknown error'
+          Reason: RC || 'Unknown error'
         });
-        res.redirect(`/payment-failed.html?prn=${PRN}&reason=${RC}`);
+        return res.redirect(`/payment-failed.html?prn=${PRN}&reason=${encodeURIComponent(RC)}`);
       }
     } else {
       console.log('4. DV validation failed');
-      res.redirect('/payment-error.html?error=validation_failed');
+      return res.redirect('/payment-error.html?error=validation_failed');
     }
   } catch (error) {
     console.error('Verification Error:', error);
-    res.redirect('/payment-error.html?error=processing_error');
+    return res.redirect('/payment-error.html?error=system_error');
   }
+});
+
+// Update error handler to always redirect instead of JSON response
+api.use((req, res, next) => {
+  console.log('Route not found:', req.path);
+  res.redirect('/payment-error.html?error=page_not_found');
+});
+
+api.use((err, req, res, next) => {
+  console.error('System error:', err);
+  res.redirect('/payment-error.html?error=system_error');
 });
 
 // Use the router
