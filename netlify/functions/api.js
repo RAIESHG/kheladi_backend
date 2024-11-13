@@ -6,8 +6,8 @@ const { v4: uuidv4 } = require('uuid');
 const qs = require('qs');
 
 const api = express();
+const router = express.Router();
 
-// Middleware
 api.use(bodyParser.json());
 api.use(bodyParser.urlencoded({ extended: true }));
 
@@ -16,7 +16,7 @@ const fonepayConfig = {
   pid: process.env.FONEPAY_PID || 'NBQM',
   secretKey: process.env.FONEPAY_SECRET_KEY || 'a7e3512f5032480a83137793cb2021dc',
   fonepayUrl: process.env.FONEPAY_URL || 'https://dev-clientapi.fonepay.com/api/merchantRequest',
-  returnUrl: process.env.RETURN_URL || '/api/verify-payment',
+  returnUrl: process.env.RETURN_URL || '/.netlify/functions/api/verify-payment',
 };
 
 // Helper function to generate PRN
@@ -90,10 +90,10 @@ function generateVerificationDV(params) {
   return dv;
 }
 
-// Direct routes without router
-api.post("/request-payment", async (req, res) => {
-  console.log('Received request at /request-payment:', req.body);
+// Routes
+router.post("/request-payment", async (req, res) => {
   try {
+    console.log('Received payment request:', req.body);
     const { amount, r1, r2 } = req.body;
 
     if (!amount || isNaN(amount) || amount <= 0) {
@@ -117,18 +117,18 @@ api.post("/request-payment", async (req, res) => {
     const paymentUrl = `${fonepayConfig.fonepayUrl}?${qs.stringify(params)}`;
     
     console.log('Redirecting to:', paymentUrl);
-    return res.redirect(paymentUrl);
+    res.redirect(paymentUrl);
 
   } catch (error) {
     console.error('Error:', error);
-    return res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-api.get("/verify-payment", (req, res) => {
-  console.log('Received verification request:', req.query);
+router.get('/verify-payment', (req, res) => {
+  console.log('1. Received verification request with query params:', req.query);
+  
   try {
-    console.log('Verification request:', req.query);
     const params = { ...req.query };
     const { DV, PS, RC, PRN, P_AMT } = params;
     delete params.DV;
@@ -170,42 +170,13 @@ api.get("/verify-payment", (req, res) => {
       res.redirect('/payment-error.html?error=validation_failed');
     }
   } catch (error) {
-    console.error('Error:', error);
-    res.redirect('/payment-error.html');
+    console.error('Verification Error:', error);
+    res.redirect('/payment-error.html?error=processing_error');
   }
 });
 
-// Log all requests
-api.use((req, res, next) => {
-  console.log('Request received:', {
-    method: req.method,
-    path: req.path,
-    body: req.body,
-    query: req.query
-  });
-  next();
-});
-
-// Error handlers
-api.use((req, res, next) => {
-  console.log('404 Not Found:', req.method, req.path);
-  res.status(404).json({
-    success: false,
-    message: 'Not Found',
-    path: req.path,
-    method: req.method,
-    body: req.body
-  });
-});
-
-api.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({
-    success: false,
-    message: 'Internal Server Error',
-    error: err.message
-  });
-});
+// Use the router
+api.use('/.netlify/functions/api', router);
 
 // Export the handler
-exports.handler = serverless(api);
+module.exports.handler = serverless(api);
