@@ -31,15 +31,12 @@
             border-radius: 4px;
             cursor: pointer;
         }
-        button:hover {
-            background-color: #45a049;
-        }
     </style>
 </head>
 <body>
     <div class="form-container">
         <h2>Make Payment</h2>
-        <form action="/api/request-payment" method="POST" id="paymentForm">
+        <form action="/.netlify/functions/api/request-payment" method="POST">
             <div class="form-group">
                 <label>Amount (NPR):</label>
                 <input type="number" name="amount" required min="1" max="100000">
@@ -55,19 +52,5 @@
             <button type="submit">Pay Now</button>
         </form>
     </div>
-
-    <script>
-        const form = document.getElementById('paymentForm');
-        form.addEventListener('submit', function(e) {
-            const amount = this.querySelector('input[name="amount"]').value;
-            if (amount <= 0 || amount > 100000) {
-                e.preventDefault();
-                alert('Amount must be between 1 and 100,000 NPR');
-                return;
-            }
-            console.log('Submitting form with amount:', amount);
-            // Let the form submit normally - no AJAX
-        });
-    </script>
 </body>
 </html> 

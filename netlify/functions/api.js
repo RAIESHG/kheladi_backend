@@ -91,8 +91,9 @@ function generateVerificationDV(params) {
 }
 
 // Routes
-router.post('/request-payment', async (req, res) => {
+router.post("/request-payment", async (req, res) => {
   try {
+    console.log('Received payment request:', req.body);
     const { amount, r1, r2 } = req.body;
 
     if (!amount || isNaN(amount) || amount <= 0) {
@@ -115,7 +116,9 @@ router.post('/request-payment', async (req, res) => {
     params.DV = generateDV(params);
     const paymentUrl = `${fonepayConfig.fonepayUrl}?${qs.stringify(params)}`;
     
+    console.log('Redirecting to:', paymentUrl);
     res.redirect(paymentUrl);
+
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ success: false, message: error.message });
