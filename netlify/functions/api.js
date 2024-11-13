@@ -11,6 +11,25 @@ const router = express.Router();
 api.use(bodyParser.json());
 api.use(bodyParser.urlencoded({ extended: true }));
 
+// Error handling middleware
+api.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Internal Server Error',
+    error: err.message
+  });
+});
+
+// 404 handler
+api.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Not Found',
+    path: req.path
+  });
+});
+
 // FonePay API configuration
 const fonepayConfig = {
   pid: process.env.FONEPAY_PID || 'NBQM',
@@ -125,10 +144,9 @@ router.post("/request-payment", async (req, res) => {
   }
 });
 
-router.get('/verify-payment', (req, res) => {
-  console.log('1. Received verification request with query params:', req.query);
-  
+router.get("/verify-payment", (req, res) => {
   try {
+    console.log('Verification request:', req.query);
     const params = { ...req.query };
     const { DV, PS, RC, PRN, P_AMT } = params;
     delete params.DV;
@@ -170,13 +188,22 @@ router.get('/verify-payment', (req, res) => {
       res.redirect('/payment-error.html?error=validation_failed');
     }
   } catch (error) {
-    console.error('Verification Error:', error);
-    res.redirect('/payment-error.html?error=processing_error');
+    console.error('Error:', error);
+    res.redirect('/payment-error.html');
   }
 });
 
-// Use the router
+// Error route
+router.get("/error", (req, res) => {
+  res.status(500).json({
+    success: false,
+    message: 'An error occurred',
+    details: req.query
+  });
+});
+
+// Mount router
 api.use('/.netlify/functions/api', router);
 
-// Export the handler
+// Export handler
 module.exports.handler = serverless(api);

@@ -1,19 +1,10 @@
 [build]
   functions = "netlify/functions"
   publish = "public"
-  command = "npm run build"
 
 [functions]
   external_node_modules = ["express"]
   node_bundler = "esbuild"
-  directory = "netlify/functions"
-
-[dev]
-  framework = "#custom"
-  command = "npm run dev"
-  targetPort = 3000
-  port = 8888
-  publish = "public"
 
 [[redirects]]
   force = true
@@ -22,10 +13,9 @@
   status = 200
 
 [[redirects]]
-  force = true
   from = "/*"
-  to = "/index.html"
-  status = 200
+  to = "/error.html"
+  status = 404
 
 [build.environment]
   NODE_VERSION = "18.14.0"
