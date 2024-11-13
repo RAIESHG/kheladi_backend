@@ -7,11 +7,10 @@
     "serverless-http": "^3.2.0",
     "body-parser": "^1.20.2",
     "uuid": "^9.0.1",
-    "qs": "^6.11.2",
-    "axios": "^1.6.0"
+    "qs": "^6.11.2"
   },
   "scripts": {
-    "dev": "netlify dev",
+    "start": "netlify dev",
     "build": "netlify build",
     "deploy": "netlify deploy --prod"
   },
