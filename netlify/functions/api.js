@@ -93,6 +93,7 @@ function generateVerificationDV(params) {
 // Routes
 router.post('/request-payment', async (req, res) => {
   try {
+    console.log('Received payment request:', req.body);
     const { amount, r1, r2 } = req.body;
 
     if (!amount || isNaN(amount) || amount <= 0) {
@@ -113,69 +114,70 @@ router.post('/request-payment', async (req, res) => {
     };
 
     params.DV = generateDV(params);
+
+    // Construct FonePay payment URL
     const paymentUrl = `${fonepayConfig.fonepayUrl}?${qs.stringify(params)}`;
-    
-    res.redirect(paymentUrl);
+    console.log('Generated FonePay URL:', paymentUrl);
+
+    // Important: Directly redirect to FonePay URL
+    return res.redirect(paymentUrl);
+
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Payment Request Error:', error);
+    // Even for errors, redirect to FonePay's error page if available
+    if (error.response && error.response.headers.location) {
+      return res.redirect(error.response.headers.location);
+    }
+    return res.redirect('/payment-error.html?error=request_failed');
   }
 });
 
 router.get('/verify-payment', (req, res) => {
-  console.log('1. Received verification request with query params:', req.query);
+  console.log('Verification params received:', req.query);
   
   try {
     const params = { ...req.query };
+    const { DV, PS, RC, PRN, P_AMT } = params;
     
-    // Check if required parameters exist
-    if (!params.PRN || !params.DV) {
-      console.error('Missing required parameters');
-      return res.redirect('/payment-error.html?error=missing_parameters');
+    // If FonePay provides a redirect URL, use it
+    if (params.redirect_url) {
+      console.log('Using FonePay redirect URL:', params.redirect_url);
+      return res.redirect(params.redirect_url);
     }
 
-    const { DV, PS, RC, PRN, P_AMT } = params;
     delete params.DV;
     delete params.RU;
 
     const calculatedDV = generateVerificationDV(params);
-    console.log('3. DV Comparison:', {
-      receivedDV: DV,
-      calculatedDV: calculatedDV,
-      match: calculatedDV === DV
-    });
 
     if (calculatedDV === DV) {
-      console.log('4. DV validation successful');
-      
-      // Log payment details
-      console.log('Payment Details:', {
-        PRN,
-        Status: PS,
-        ResponseCode: RC,
-        Amount: P_AMT,
-        BankCode: params.BC,
-        UserID: params.UID
-      });
-
       if (PS === 'true' && RC === 'successful') {
-        console.log('5. Payment successful');
+        // If FonePay provides a success URL, use it
+        if (params.success_url) {
+          return res.redirect(params.success_url);
+        }
         return res.redirect('/payment-success.html');
       } else {
-        console.log('5. Payment failed', {
-          PaymentStatus: PS,
-          ResponseCode: RC,
-          Reason: RC || 'Unknown error'
-        });
-        return res.redirect(`/payment-failed.html?prn=${PRN}&reason=${encodeURIComponent(RC)}`);
+        // If FonePay provides a failure URL, use it
+        if (params.failure_url) {
+          return res.redirect(params.failure_url);
+        }
+        return res.redirect(`/payment-failed.html?prn=${PRN}&reason=${RC}`);
       }
     } else {
-      console.log('4. DV validation failed');
+      // If FonePay provides an error URL, use it
+      if (params.error_url) {
+        return res.redirect(params.error_url);
+      }
       return res.redirect('/payment-error.html?error=validation_failed');
     }
   } catch (error) {
     console.error('Verification Error:', error);
-    return res.redirect('/payment-error.html?error=system_error');
+    // If FonePay provides an error URL, use it
+    if (req.query.error_url) {
+      return res.redirect(req.query.error_url);
+    }
+    return res.redirect('/payment-error.html?error=processing_error');
   }
 });
 
