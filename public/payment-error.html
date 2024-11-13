@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Error</title>
+</head>
+<body>
+    <h2>Payment Verification Error</h2>
+    <div id="errorDetails">
+        <p>There was an error verifying your payment.</p>
+        <p id="errorMessage"></p>
+    </div>
+    <a href="/">Return to Payment Page</a>
+    <script>
+        // Display specific error message
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+        const errorMap = {
+            'missing_params': 'Required payment parameters are missing',
+            'validation_failed': 'Payment validation failed',
+            'processing_error': 'Error processing payment verification'
+        };
+        document.getElementById('errorMessage').textContent = 
+            errorMap[error] || 'Unknown error occurred';
+    </script>
+</body>
+</html> 
