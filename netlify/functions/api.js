@@ -6,6 +6,8 @@ const { v4: uuidv4 } = require('uuid');
 const qs = require('qs');
 const { google } = require('googleapis');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 
 const api = express();
 const router = express.Router();
@@ -89,34 +91,23 @@ router.get("/", async (req, res) => {
 });
 
 // New route to handle adding a row
-router.post("/add-row", async (req, res) => {
-    const { remarks } = req.body;
-    const spreadsheetId = '1YeuO39hr8fhu9Z5x5xb_ZXcXAE8pC2vF4v3ROqU1hso';
-    const range = 'Sheet1!A:B';// Adjust based on your actual sheet name
-
-    try {
-        const response = await sheets.spreadsheets.values.append({
-            spreadsheetId,
-            range,
-            valueInputOption: 'RAW',
-            resource: {
-                values: [
-                    [new Date().toISOString(), remarks+"test"] // Timestamp and remarks
-                ]
-            }
-        });
-
-        console.log('Sheet updated:', response);
-        res.json({ success: true, message: 'Row added successfully' });
-    } catch (error) {
-        console.error('The API returned an error:', error);
-        res.status(500).json({ success: false, message: 'Failed to add row', error: error.message });
-    }
-});
 
 // Mount the router
 api.use('/', router);
 api.use(cors());  // Enable CORS for all routes
+
+api.get("/payment-complete", (req, res) => {
+    const filePath = path.join(__dirname, '..', 'public', 'payment-complete.html');
+    fs.readFile(filePath, 'utf8', (err, data) => {
+        if (err) {
+            console.error('Error reading HTML file:', err);
+            return res.status(500).send('Error loading the page');
+        }
+        // Replace placeholder with actual environment variable
+        const updatedData = data.replace('`${window.location.origin}`', process.env.HOMEPAGE_LINK || 'https://ashimshakya.itch.io/gauley');
+        res.send(updatedData);
+    });
+});
 
 // Export the handler
 module.exports.handler = serverless(api);

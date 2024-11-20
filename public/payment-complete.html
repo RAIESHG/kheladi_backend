@@ -15,7 +15,7 @@
         p {
             color: #555;
         }
-        a.button {
+        .button {
             display: inline-block;
             padding: 10px 20px;
             margin-top: 20px;
@@ -25,7 +25,7 @@
             border-radius: 5px;
             font-weight: bold;
         }
-        a.button:hover {
+        .button:hover {
             background-color: #45a049;
         }
     </style>
@@ -33,28 +33,6 @@
 <body>
     <h1>Payment Complete</h1>
     <p>Your payment has been processed. Please check your email for confirmation.</p>
-    <a href="https://ashimshakya.itch.io/gauley" class="button">Return to Homepage</a>
-
-    <script>
-        window.onload = function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const remarks = urlParams.get('remarks') || 'No remarks provided';
-
-            fetch('/api/add-row', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ remarks: remarks })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Row added:', data);
-            })
-            .catch(error => {
-                console.error('Error adding row:', error);
-            });
-        };
-    </script>
+    <a id="homepageLink" href="${window.location.origin}" class="button">Return to Homepage</a>
 </body>
 </html> 
