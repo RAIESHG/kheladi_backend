@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Welcome to Payment</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background-color: #f4f4f4;
+        }
+        form {
+            margin-top: 20px;
+        }
+        input, button {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to Our Payment Service</h1>
+    <p>Please enter your email to start the payment process:</p>
+    <form id="startPaymentForm">
+        <input type="email" name="email" placeholder="Enter your email" required>
+        <button type="submit">Start Payment</button>
+    </form>
+
+    <script>
+        document.getElementById('startPaymentForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const email = this.email.value;
+            window.location.href = `/${encodeURIComponent(email)}`;
+        });
+    </script>
+</body>
+</html> 

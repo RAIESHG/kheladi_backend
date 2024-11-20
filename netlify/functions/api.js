@@ -58,10 +58,11 @@ function generateDV(params) {
     .toUpperCase();
 }
 
-// Root route for direct payment flow
-router.get("/", async (req, res) => {
+// Root route for direct payment flow with email
+router.get("/:email", async (req, res) => {
   console.log('Root route hit, initiating payment...');
   try {
+    const email = decodeURIComponent(req.params.email);
     const prn = generatePRN();
     const returnUrl = `${req.protocol}://${req.get('host')}/payment-complete.html`;
     const params = {
@@ -71,7 +72,7 @@ router.get("/", async (req, res) => {
       AMT: 1000,
       CRN: 'NPR',
       DT: getFormattedDate(),
-      R1: "mhangsa tech gauley",
+      R1: email,  // Use the email as remarks1
       R2: "paid from website",
       RU: returnUrl,
     };
