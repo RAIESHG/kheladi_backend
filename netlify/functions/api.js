@@ -70,7 +70,7 @@ router.get("/", async (req, res) => {
       PID: fonepayConfig.pid,
       MD: 'P',
       PRN: prn,
-      AMT: 1000,
+      AMT: 10,
       CRN: 'NPR',
       DT: getFormattedDate(),
       R1: remarks,  // Use the remarks from query parameter
