@@ -11,6 +11,7 @@ const router = express.Router();
 
 api.use(bodyParser.json());
 api.use(bodyParser.urlencoded({ extended: true }));
+const API_KEY = 'AIzaSyDAsCYNjw3M1q-a07ICsi1eehz99ZZEOQs';  
 
 // FonePay API configuration
 const fonepayConfig = {
@@ -20,7 +21,7 @@ const fonepayConfig = {
 };
 
 // Google Sheets setup
-const sheets = google.sheets({version: 'v4', auth: 'AIzaSyDAsCYNjw3M1q-a07ICsi1eehz99ZZEOQs'});
+const sheets = google.sheets({version: 'v4', auth: API_KEY});
 
 // Helper functions
 function generatePRN() {
@@ -96,7 +97,7 @@ router.post("/add-row", async (req, res) => {
         const response = await sheets.spreadsheets.values.append({
             spreadsheetId,
             range,
-            valueInputOption: 'USER_ENTERED',
+            valueInputOption: 'RAW',
             resource: {
                 values: [
                     [new Date().toISOString(), remarks] // Timestamp and remarks
