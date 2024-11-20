@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const qs = require('qs');
+const { google } = require('googleapis');
 
 const api = express();
 const router = express.Router();
@@ -11,19 +12,15 @@ const router = express.Router();
 api.use(bodyParser.json());
 api.use(bodyParser.urlencoded({ extended: true }));
 
-// Apply logging middleware
-api.use((req, res, next) => {
-    const now = new Date();
-    console.log(`${now.toISOString()} - Request: ${req.method} ${req.originalUrl}`);
-    next();
-});
-
 // FonePay API configuration
 const fonepayConfig = {
   pid: process.env.FONEPAY_PID || 'NBQM',
   secretKey: process.env.FONEPAY_SECRET_KEY || 'a7e3512f5032480a83137793cb2021dc',
   fonepayUrl: process.env.FONEPAY_URL || 'https://dev-clientapi.fonepay.com/api/merchantRequest',
 };
+
+// Google Sheets setup
+const sheets = google.sheets({version: 'v4', auth: 'AIzaSyDAsCYNjw3M1q-a07ICsi1eehz99ZZEOQs'});
 
 // Helper functions
 function generatePRN() {
@@ -72,7 +69,7 @@ router.get("/", async (req, res) => {
       AMT: 1000,
       CRN: 'NPR',
       DT: getFormattedDate(),
-      R1: remarks + ": From Mhangsa Creation",  // Use the remarks from query parameter
+      R1: remarks,  // Use the remarks from query parameter
       R2: "paid from website",
       RU: returnUrl,
     };
@@ -87,6 +84,32 @@ router.get("/", async (req, res) => {
     console.error('Error:', error);
     return res.redirect('/payment-error.html');
   }
+});
+
+// New route to handle adding a row
+router.post("/add-row", async (req, res) => {
+    const { remarks } = req.body;
+    const spreadsheetId = '1YeuO39hr8fhu9Z5x5xb_ZXcXAE8pC2vF4v3ROqU1hso';
+    const range = 'Sheet1'; // Adjust based on your actual sheet name
+
+    try {
+        const response = await sheets.spreadsheets.values.append({
+            spreadsheetId,
+            range,
+            valueInputOption: 'USER_ENTERED',
+            resource: {
+                values: [
+                    [new Date().toISOString(), remarks] // Timestamp and remarks
+                ]
+            }
+        });
+
+        console.log('Sheet updated:', response);
+        res.json({ success: true, message: 'Row added successfully' });
+    } catch (error) {
+        console.error('The API returned an error:', error);
+        res.status(500).json({ success: false, message: 'Failed to add row', error: error.message });
+    }
 });
 
 // Mount the router
