@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const qs = require('qs');
 const { google } = require('googleapis');
+const cors = require('cors');
 
 const api = express();
 const router = express.Router();
@@ -115,6 +116,7 @@ router.post("/add-row", async (req, res) => {
 
 // Mount the router
 api.use('/', router);
+api.use(cors());  // Enable CORS for all routes
 
 // Export the handler
 module.exports.handler = serverless(api);
