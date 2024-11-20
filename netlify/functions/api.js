@@ -23,7 +23,6 @@ const fonepayConfig = {
   pid: process.env.FONEPAY_PID || 'NBQM',
   secretKey: process.env.FONEPAY_SECRET_KEY || 'a7e3512f5032480a83137793cb2021dc',
   fonepayUrl: process.env.FONEPAY_URL || 'https://dev-clientapi.fonepay.com/api/merchantRequest',
-  returnUrl: 'https://www.mhangsacreation.com/verify-payment',
 };
 
 // Helper functions
