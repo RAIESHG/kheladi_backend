@@ -101,7 +101,7 @@ router.post("/add-row", async (req, res) => {
             valueInputOption: 'RAW',
             resource: {
                 values: [
-                    [new Date().toISOString(), remarks] // Timestamp and remarks
+                    [new Date().toISOString(), remarks+"test"] // Timestamp and remarks
                 ]
             }
         });
