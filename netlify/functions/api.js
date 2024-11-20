@@ -64,6 +64,7 @@ router.get("/", async (req, res) => {
   try {
     const remarks = req.query.remarks || "Default remarks"; // Use query parameter or default
     const prn = generatePRN();
+    const returnUrl = `${req.protocol}://${req.get('host')}/payment-complete.html`; // Dynamically set the returnUrl
     const params = {
       PID: fonepayConfig.pid,
       MD: 'P',
@@ -71,9 +72,9 @@ router.get("/", async (req, res) => {
       AMT: 1000,
       CRN: 'NPR',
       DT: getFormattedDate(),
-      R1: remarks+": From Mhangsa Creation",  // Use the remarks from query parameter
+      R1: remarks + ": From Mhangsa Creation",  // Use the remarks from query parameter
       R2: "paid from website",
-      RU: fonepayConfig.returnUrl,
+      RU: returnUrl,
     };
 
     params.DV = generateDV(params);
