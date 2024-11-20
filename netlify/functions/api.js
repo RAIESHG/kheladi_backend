@@ -23,6 +23,7 @@ const fonepayConfig = {
   pid: process.env.FONEPAY_PID || 'NBQM',
   secretKey: process.env.FONEPAY_SECRET_KEY || 'a7e3512f5032480a83137793cb2021dc',
   fonepayUrl: process.env.FONEPAY_URL || 'https://dev-clientapi.fonepay.com/api/merchantRequest',
+  returnUrl: 'https://www.mhangsacreation.com/verify-payment',
 };
 
 // Helper functions
@@ -62,8 +63,8 @@ function generateDV(params) {
 router.get("/", async (req, res) => {
   console.log('Root route hit, initiating payment...');
   try {
+    const remarks = req.query.remarks || "Default remarks"; // Use query parameter or default
     const prn = generatePRN();
-    const returnUrl = `${req.protocol}://${req.get('host')}/payment-complete.html`;
     const params = {
       PID: fonepayConfig.pid,
       MD: 'P',
@@ -71,9 +72,9 @@ router.get("/", async (req, res) => {
       AMT: 1000,
       CRN: 'NPR',
       DT: getFormattedDate(),
-      R1: "mhangsa tech gauley",
+      R1: remarks+": From Mhangsa Creation",  // Use the remarks from query parameter
       R2: "paid from website",
-      RU: returnUrl,
+      RU: fonepayConfig.returnUrl,
     };
 
     params.DV = generateDV(params);
