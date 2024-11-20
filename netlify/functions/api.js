@@ -92,7 +92,7 @@ router.get("/", async (req, res) => {
 router.post("/add-row", async (req, res) => {
     const { remarks } = req.body;
     const spreadsheetId = '1YeuO39hr8fhu9Z5x5xb_ZXcXAE8pC2vF4v3ROqU1hso';
-    const range = 'Sheet1'; // Adjust based on your actual sheet name
+    const range = 'Sheet1!A:B';// Adjust based on your actual sheet name
 
     try {
         const response = await sheets.spreadsheets.values.append({
